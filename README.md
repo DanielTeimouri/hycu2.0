@@ -9,15 +9,15 @@ INSTALL INSTRUCTIONS
 
 HyCu is built using CMake, and provides four targets: single, threaded, mpi, and merger.
 
-To build and install the threaded version HyCu with no further adjustments into PREFIX/bin use
+To build the single-curve, threaded, and merger programs use
 ~~~
-cmake -D CMAKE_INSTALL_PREFIX=/home/martin/Documents/Mathematik/Projekte/hycu 
-make
+cmake -S . -B build -DBUILD_SINGLE=ON -DBUILD_THREADED=ON -DBUILD_MERGER=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=11
+cmake --build build -j
 ~~~
 
-This assumes that the compiler is C++11 enabled by default. Prior GCC 6 you have to set the compiler flags
+To install the programs into PREFIX/bin, set `CMAKE_INSTALL_PREFIX` when configuring and then run
 ~~~
-cmake -D CMAKE_CXX_FLAGS="-std=c++11" -D CMAKE_INSTALL_PREFIX=/home/martin/Documents/Mathematik/Projekte/hycu -D BuildThreaded=ON
+cmake --install build
 ~~~
 
 CMake caches configuration variables, so you do not have to pass them again when you rebuild.
@@ -61,6 +61,22 @@ mpirun -n 2 --map-by ppr:1:node hycu-mpi -n 16 config.yaml results/
 ~~~
 
 Skipping the number of threads lets HyCu use all available cores.
+
+### CPU counting variants
+
+The threaded program uses direct evaluation by default. Pass
+`--reuse-evaluations` to reuse polynomial evaluations, or
+`--batch-coefficient-counting` to count coefficient families together.
+The batch implementation uses the optimised NTT by default. To build the
+earlier reference NTT variant, configure a separate build directory with
+`-DCPU_BATCH_REFERENCE_NTT=ON`; its command-line options are the same.
+`--worker-poll-ms` sets the worker polling interval independently of the
+counting variant.
+
+Example configurations are in `test/config`. For example:
+~~~
+build/src/hycu-threaded -n 6 --worker-poll-ms 5 --batch-coefficient-counting test/config/config-p100-g2.yaml results/
+~~~
 
 ### Configuration file
 

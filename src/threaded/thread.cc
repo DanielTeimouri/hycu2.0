@@ -45,6 +45,12 @@ shutdown()
 
   this->main_cond_var.notify_all();
   this->main_std_thread.join();
+  if (this->batch_coefficient_counting)
+    cerr << "BATCH_STATS families=" << batch_statistics.families
+         << " lookups=" << batch_statistics.lookups
+         << " fallbacks=" << batch_statistics.fallbacks
+         << " histogram_ns=" << batch_statistics.histogram_ns
+         << " convolution_ns=" << batch_statistics.convolution_ns << endl;
 }
 
 void
@@ -54,40 +60,65 @@ main_thread(
     const shared_ptr<StoreFactoryInterface> store_factory
     )
 {
-  unique_lock<mutex> main_lock(thread->main_mutex);
-
+  vector<unique_ptr<CpuCoefficientBatch>> batch_caches;
+  shared_ptr<FqElementTable> batch_base_field;
   while ( true ) {
-    while ( true ) {
-      thread->data_mutex.lock();
-      bool shutting_down = thread->shutting_down;
-      bool blocks_empty = thread->blocks.empty();
-      thread->data_mutex.unlock();
-
-      if ( shutting_down )
-        return;
-
-      if ( blocks_empty )
-        thread->main_cond_var.wait(main_lock);
-      else
-        break;
-    }
+    // Queue updates, the wait predicate and shutdown use the same mutex.
+    // wait() atomically releases it, so assign() cannot notify in a gap
+    // between checking an empty queue and entering the wait.
+    unique_lock<mutex> data_lock(thread->data_mutex);
+    thread->main_cond_var.wait(data_lock, [&thread] {
+      return thread->shutting_down || !thread->blocks.empty();
+    });
+    if (thread->shutting_down)
+      return;
 
 
     vuu_block block;
     shared_ptr<FqElementTable> fq_table;
     vector<shared_ptr<ReductionTable>> reduction_tables;
 
-    thread->data_mutex.lock();
     tie(block, fq_table, reduction_tables) =
       thread->blocks.front();
     thread->blocks.pop_front();
-    thread->data_mutex.unlock();
+    data_lock.unlock();
+
+    // Cache lifetime is limited to this block. No sharing between threads or
+    // between the base field and extension fields; checkpoint blocks stay intact.
+    vector<CpuEvaluationCache> evaluation_caches;
+    if (thread->reuse_evaluations && !thread->is_opencl_thread()) {
+      const size_t varying = CpuEvaluationCache::select_coefficient(block);
+      if (varying < block.size()) {
+        evaluation_caches.reserve(reduction_tables.size());
+        for (auto & table : reduction_tables)
+          evaluation_caches.emplace_back(*table, varying);
+      }
+    }
+
+    if (thread->batch_coefficient_counting && !thread->is_opencl_thread()) {
+      if (batch_base_field != fq_table) {
+        batch_caches.clear();
+        batch_base_field = fq_table;
+        for (auto & table : reduction_tables)
+          batch_caches.emplace_back(new CpuCoefficientBatch(table, thread->batch_statistics));
+      }
+      const auto varying = CpuEvaluationCache::select_coefficient(block);
+      for (auto & cache : batch_caches) cache->begin_block(varying);
+    }
 
     auto store = store_factory->create();
     for ( BlockIterator iter(block); !iter.is_end(); iter.step() ) {
       Curve curve(fq_table, iter.as_position());
       if ( !curve.has_squarefree_rhs() ) continue;
-      for ( auto table : reduction_tables ) curve.count(table);
+      if (!batch_caches.empty()) {
+        for (auto & cache : batch_caches) curve.count(*cache);
+      }
+      else if (evaluation_caches.empty()) {
+        for (auto table : reduction_tables) curve.count(table);
+      }
+      else {
+        for (auto & cache : evaluation_caches) curve.count(cache);
+      }
       store->register_curve(curve);
     }
     store->flush_to_static_store(block);

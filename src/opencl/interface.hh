@@ -32,7 +32,7 @@ class OpenCLInterface {};
 
 #include <map>
 #include <memory>
-#include <CL/cl.hpp>
+#include <CL/opencl.hpp>
 
 #include "opencl/program_evaluation.hh"
 #include "opencl/program_reduction.hh"

@@ -26,7 +26,7 @@
 
 #include <memory>
 #include <string>
-#include <CL/cl.hpp>
+#include <CL/opencl.hpp>
 
 #include "opencl/program.hh"
 

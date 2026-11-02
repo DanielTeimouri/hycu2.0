@@ -32,6 +32,8 @@
 #include <flint/nmod_poly.h>
 
 #include "curve_iterator.hh"
+#include "cpu_evaluation_cache.hh"
+#include "cpu_coefficient_batch.hh"
 #include "fq_element_table.hh"
 #include "opencl/interface.hh"
 #include "reduction_table.hh"
@@ -64,6 +66,8 @@ class Curve
     vector<unsigned int> convert_poly_coeff_exponents(const ReductionTable & table);
 
     void count(ReductionTable & table);
+    void count(CpuEvaluationCache & cache);
+    void count(CpuCoefficientBatch & batch);
     void inline count(const shared_ptr<ReductionTable> table)
     {
       this->count(*table);
@@ -91,6 +95,10 @@ class Curve
     map<unsigned int, tuple<unsigned int,unsigned int>> nmb_points;
 
   private:
+    void count_impl(ReductionTable & table, CpuEvaluationCache * cache,
+                    CpuCoefficientBatch * batch = nullptr);
+    void count_cpu_reusing(const vector<unsigned int> & coefficients,
+                           CpuEvaluationCache & cache);
     void count_opencl(ReductionTable & table, const vector<unsigned int> & poly_coeff_exponents);
     void count_cpu(const ReductionTable & table, const vector<unsigned int> & poly_coeff_exponents);
 };

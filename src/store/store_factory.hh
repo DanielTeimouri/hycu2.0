@@ -67,7 +67,6 @@ class StoreFactory :
 };
 
 
-// todo: choose more descriptive names
 enum StoreType { EC };
 
 inline

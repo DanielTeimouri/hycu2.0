@@ -22,12 +22,13 @@
 
 
 #ifndef _H_FQ_ELEMENT_TABLE
-#define _H_FQ_ELEMENT_TABLE
+#define _H_FQ_ELEMENT_TABLE 
 
 #include <iostream>
 #include <tuple>
 #include <vector>
 #include <flint/fq_nmod.h>
+#include <flint/nmod_poly.h>
 
 
 using std::tuple;
@@ -47,6 +48,7 @@ class FqElementTable
 
     bool inline is_prime_field() const { return this->prime_exponent == 1; };
 
+    // Read the constant coefficient; use this for prime-field elements.
     inline unsigned int at_nmod(int ix) const
     {
       return nmod_poly_get_coeff_ui(this->fq_elements.at(ix), 0);
@@ -54,6 +56,7 @@ class FqElementTable
     inline const fq_nmod_struct* at(unsigned int ix) const { return this->fq_elements[ix]; };
     inline const fq_nmod_struct* operator[](unsigned int ix) const { return this->fq_elements[ix]; };
 
+    // Indices 0..q-2 store generator powers; index q-1 represents zero.
     unsigned int inline zero_index() const { return this->prime_power_pred; };
     inline tuple<unsigned int,unsigned int> block_non_zero() const { return make_tuple(0, (int)this->prime_power_pred); };
     inline tuple<unsigned int,unsigned int> block_complete() const { return make_tuple(0, (int)this->prime_power); };

@@ -130,7 +130,7 @@ _reduce(
 void
 OpenCLKernelReduction::
 reduce(
-    map<unsigned int, tuple<int,int>> & nmb_points
+    map<unsigned int, tuple<unsigned int,unsigned int>> & nmb_points
     )
 {
   get<0>(nmb_points[this->prime_exponent]) +=

@@ -34,6 +34,7 @@
 #include "opencl/interface.hh"
 #include "reduction_table.hh"
 
+#include <string>
 
 using namespace std;
 
@@ -122,7 +123,7 @@ compute_incrementation_table(
 
   fq_nmod_t gen;
   fq_nmod_init(gen, ctx);
-  // Flint, when the field is not given by Conway polynomials, does not provide a multiplicative generator
+  // FLINT's defining generator need not generate the multiplicative group.
   fq_nmod_gen(gen, ctx);
 
   fq_nmod_t a;

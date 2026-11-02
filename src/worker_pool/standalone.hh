@@ -24,6 +24,7 @@
 #ifndef _H_WORKER_POOL_STANDALONE
 #define _H_WORKER_POOL_STANDALONE
 
+#include <chrono>
 #include <memory>
 #include <set>
 
@@ -42,15 +43,23 @@ class StandaloneWorkerPool
     StandaloneWorkerPool(
         shared_ptr<StoreFactoryInterface> store_factory,
         int nmb_working_threads = -1,
-        unsigned int nmb_threads_per_gpu = 0
+        unsigned int nmb_threads_per_gpu = 0,
+        bool reuse_evaluations = false,
+        std::chrono::milliseconds worker_poll_interval = std::chrono::milliseconds(50),
+        bool batch_coefficient_counting = false
         );
 
     StandaloneWorkerPool(
         StoreType store_type,
         int nmb_working_threads = -1,
-        unsigned int nmb_threads_per_gpu = 0
+        unsigned int nmb_threads_per_gpu = 0,
+        bool reuse_evaluations = false,
+        std::chrono::milliseconds worker_poll_interval = std::chrono::milliseconds(50),
+        bool batch_coefficient_counting = false
         ) :
-      StandaloneWorkerPool ( create_store_factory(store_type), nmb_working_threads, nmb_threads_per_gpu ) {};
+      StandaloneWorkerPool ( create_store_factory(store_type), nmb_working_threads,
+                             nmb_threads_per_gpu, reuse_evaluations, worker_poll_interval,
+                             batch_coefficient_counting ) {};
 
     ~StandaloneWorkerPool();
 
@@ -73,6 +82,7 @@ class StandaloneWorkerPool
     };
 
   private:
+    const std::chrono::milliseconds worker_poll_interval;
     shared_ptr<ThreadPool> master_thread_pool;
 
     unsigned int nmb_cpu_idle = 0;

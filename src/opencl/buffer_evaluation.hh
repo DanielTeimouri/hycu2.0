@@ -25,7 +25,7 @@
 #define _H_OPENCL_BUFFER_EVALUATION
 
 #include <memory>
-#include <CL/cl.hpp>
+#include <CL/opencl.hpp>
 
 
 using std::shared_ptr;

@@ -85,7 +85,7 @@ OpenCLKernelEvaluation(
 void
 OpenCLKernelEvaluation::
 enqueue(
-    vector<int> poly_coeff_exponents
+    vector<unsigned int> poly_coeff_exponents
     )
 {
   cl_int status;

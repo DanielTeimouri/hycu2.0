@@ -22,6 +22,7 @@
 
 
 #include <vector>
+#include <stdexcept>
 #include <tuple>
 
 #include "worker_pool/standalone.hh"
@@ -40,11 +41,17 @@ StandaloneWorkerPool::
 StandaloneWorkerPool(
     shared_ptr<StoreFactoryInterface> store_factory,
     int nmb_working_threads,
-    unsigned int nmb_threads_per_gpu
+    unsigned int nmb_threads_per_gpu,
+    bool reuse_evaluations,
+    chrono::milliseconds worker_poll_interval,
+    bool batch_coefficient_counting
     ) :
+  worker_poll_interval ( worker_poll_interval ),
   next_save_time ( system_clock::now() + delay_save_time )
 {
-  this->master_thread_pool = make_shared<ThreadPool>(store_factory);
+  if (worker_poll_interval.count() <= 0)
+    throw invalid_argument("worker poll interval must be positive");
+  this->master_thread_pool = make_shared<ThreadPool>(store_factory, reuse_evaluations, batch_coefficient_counting);
   this->master_thread_pool->spark_threads(nmb_working_threads, nmb_threads_per_gpu);
 }
 
@@ -111,7 +118,7 @@ fill_idle_queues()
     this->nmb_opencl_idle += get<1>(nmb_cpu_opencl);
 
     if ( this->nmb_cpu_idle == 0 && this->nmb_opencl_idle == 0 )
-      this_thread::sleep_for(chrono::milliseconds(50));
+      this_thread::sleep_for(this->worker_poll_interval);
     else
       break;
   }

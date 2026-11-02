@@ -58,10 +58,14 @@ class Thread :
   public:
     Thread( weak_ptr<ThreadPool> thread_pool,
             const shared_ptr<StoreFactoryInterface> store_factory,
-            shared_ptr<OpenCLInterface> opencl = {} ) :
+            shared_ptr<OpenCLInterface> opencl = {},
+            bool reuse_evaluations = false,
+            bool batch_coefficient_counting = false ) :
       thread_pool ( thread_pool ),
       store_factory ( store_factory ),
-      opencl ( opencl )
+      opencl ( opencl ),
+      reuse_evaluations ( reuse_evaluations ),
+      batch_coefficient_counting ( batch_coefficient_counting )
       {};
 
     void spark();
@@ -81,13 +85,15 @@ class Thread :
     thread main_std_thread;
     bool shutting_down;
 
-    mutex main_mutex;
     mutex data_mutex;
     condition_variable main_cond_var;
 
     const shared_ptr<StoreFactoryInterface> store_factory;
     
     shared_ptr<OpenCLInterface> opencl;
+    const bool reuse_evaluations;
+    const bool batch_coefficient_counting;
+    CpuBatchStatistics batch_statistics;
     shared_ptr<FqElementTable> fq_table;
     vector<shared_ptr<ReductionTable>> reduction_tables;
 

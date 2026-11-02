@@ -1,0 +1,195 @@
+# All odd primes p with 3 <= p < 100.
+StoreType: EC
+Moduli:
+  - Prime: 3
+    PrimeExponent: 1
+    Genus: 2
+    WithMarkedPoint: false
+    CountExponent: 2
+    ResultPath: q3g2
+    PackageSize: 2500
+
+  - Prime: 5
+    PrimeExponent: 1
+    Genus: 2
+    WithMarkedPoint: false
+    CountExponent: 2
+    ResultPath: q5g2
+    PackageSize: 2500
+
+  - Prime: 7
+    PrimeExponent: 1
+    Genus: 2
+    WithMarkedPoint: false
+    CountExponent: 2
+    ResultPath: q7g2
+    PackageSize: 2500
+
+  - Prime: 11
+    PrimeExponent: 1
+    Genus: 2
+    WithMarkedPoint: false
+    CountExponent: 2
+    ResultPath: q11g2
+    PackageSize: 2500
+
+  - Prime: 13
+    PrimeExponent: 1
+    Genus: 2
+    WithMarkedPoint: false
+    CountExponent: 2
+    ResultPath: q13g2
+    PackageSize: 2500
+
+  - Prime: 17
+    PrimeExponent: 1
+    Genus: 2
+    WithMarkedPoint: false
+    CountExponent: 2
+    ResultPath: q17g2
+    PackageSize: 2500
+
+  - Prime: 19
+    PrimeExponent: 1
+    Genus: 2
+    WithMarkedPoint: false
+    CountExponent: 2
+    ResultPath: q19g2
+    PackageSize: 2500
+
+  - Prime: 23
+    PrimeExponent: 1
+    Genus: 2
+    WithMarkedPoint: false
+    CountExponent: 2
+    ResultPath: q23g2
+    PackageSize: 2500
+
+  - Prime: 29
+    PrimeExponent: 1
+    Genus: 2
+    WithMarkedPoint: false
+    CountExponent: 2
+    ResultPath: q29g2
+    PackageSize: 2500
+
+  - Prime: 31
+    PrimeExponent: 1
+    Genus: 2
+    WithMarkedPoint: false
+    CountExponent: 2
+    ResultPath: q31g2
+    PackageSize: 2500
+
+  - Prime: 37
+    PrimeExponent: 1
+    Genus: 2
+    WithMarkedPoint: false
+    CountExponent: 2
+    ResultPath: q37g2
+    PackageSize: 2500
+
+  - Prime: 41
+    PrimeExponent: 1
+    Genus: 2
+    WithMarkedPoint: false
+    CountExponent: 2
+    ResultPath: q41g2
+    PackageSize: 2500
+
+  - Prime: 43
+    PrimeExponent: 1
+    Genus: 2
+    WithMarkedPoint: false
+    CountExponent: 2
+    ResultPath: q43g2
+    PackageSize: 2500
+
+  - Prime: 47
+    PrimeExponent: 1
+    Genus: 2
+    WithMarkedPoint: false
+    CountExponent: 2
+    ResultPath: q47g2
+    PackageSize: 2500
+
+  - Prime: 53
+    PrimeExponent: 1
+    Genus: 2
+    WithMarkedPoint: false
+    CountExponent: 2
+    ResultPath: q53g2
+    PackageSize: 2500
+
+  - Prime: 59
+    PrimeExponent: 1
+    Genus: 2
+    WithMarkedPoint: false
+    CountExponent: 2
+    ResultPath: q59g2
+    PackageSize: 2500
+
+  - Prime: 61
+    PrimeExponent: 1
+    Genus: 2
+    WithMarkedPoint: false
+    CountExponent: 2
+    ResultPath: q61g2
+    PackageSize: 2500
+
+  - Prime: 67
+    PrimeExponent: 1
+    Genus: 2
+    WithMarkedPoint: false
+    CountExponent: 2
+    ResultPath: q67g2
+    PackageSize: 2500
+
+  - Prime: 71
+    PrimeExponent: 1
+    Genus: 2
+    WithMarkedPoint: false
+    CountExponent: 2
+    ResultPath: q71g2
+    PackageSize: 2500
+
+  - Prime: 73
+    PrimeExponent: 1
+    Genus: 2
+    WithMarkedPoint: false
+    CountExponent: 2
+    ResultPath: q73g2
+    PackageSize: 2500
+
+  - Prime: 79
+    PrimeExponent: 1
+    Genus: 2
+    WithMarkedPoint: false
+    CountExponent: 2
+    ResultPath: q79g2
+    PackageSize: 2500
+
+  - Prime: 83
+    PrimeExponent: 1
+    Genus: 2
+    WithMarkedPoint: false
+    CountExponent: 2
+    ResultPath: q83g2
+    PackageSize: 2500
+
+  - Prime: 89
+    PrimeExponent: 1
+    Genus: 2
+    WithMarkedPoint: false
+    CountExponent: 2
+    ResultPath: q89g2
+    PackageSize: 2500
+
+  - Prime: 97
+    PrimeExponent: 1
+    Genus: 2
+    WithMarkedPoint: false
+    CountExponent: 2
+    ResultPath: q97g2
+    PackageSize: 2500
+

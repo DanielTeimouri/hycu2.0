@@ -1,5 +1,8 @@
 build/
 build_test/
+/results/
+/build-c-improvment/
+/build-c-improvment-sanitize/
 *.*.swp
 .sconsign.dblite
 config.log

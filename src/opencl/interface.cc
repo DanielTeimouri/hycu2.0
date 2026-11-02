@@ -24,7 +24,7 @@
 #include <iostream>
 #include <memory>
 #include <vector>
-#include <CL/cl.hpp>
+#include <CL/opencl.hpp>
 
 #include "opencl/interface.hh"
 

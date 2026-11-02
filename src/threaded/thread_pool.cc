@@ -60,7 +60,8 @@ spark_threads(
   // we slightly oversubscribe here, assuming that the
   // package size in BlockIterator is large enough
   for ( unsigned int ix=this->threads.size()/8; ix<(unsigned int)nmb_working_threads; ++ix )
-    this->threads.push_back(make_shared<Thread>(shared_from_this(), this->store_factory));
+    this->threads.push_back(make_shared<Thread>(shared_from_this(), this->store_factory,
+        shared_ptr<OpenCLInterface>(), this->reuse_evaluations, this->batch_coefficient_counting));
 
 
   for ( const auto thread : this->threads ) {

@@ -4,6 +4,9 @@ list(APPEND CMAKE_MODULE_PATH "${HyCu_SOURCE_DIR}/cmake")
 
 option(BUILD_SINGLE "build single curve version" OFF)
 option(BUILD_TEST "build tests" OFF)
+option(BUILD_CPU_REUSE_TEST "build CPU evaluation reuse test (does not run it)" OFF)
+option(BUILD_CPU_BATCH_TEST "build CPU coefficient batch test (does not run it)" OFF)
+option(CPU_BATCH_REFERENCE_NTT "use the earlier reference NTT for CPU batch counting" OFF)
 option(BUILD_THREADED "build threaded version" OFF)
 option(BUILD_MPI "build MPI version" OFF)
 option(BUILD_MERGER "build MPI version" OFF)
@@ -16,17 +19,21 @@ if (TIMING)
   add_definitions("-D TIMING")
 endif()
 
+if (CPU_BATCH_REFERENCE_NTT)
+  add_definitions("-D HYCU_CPU_BATCH_REFERENCE_NTT")
+endif()
+
 if (WITH_OPENCL)
   add_definitions("-D WITH_OPENCL")
 endif()
 
 
 find_package (Boost COMPONENTS
-  system filesystem program_options
+  filesystem program_options
   REQUIRED
   )
 
-if (WithOpenCL)
+if (WITH_OPENCL)
   find_package (OpenCL REQUIRED)
   include_directories (${OpenCL_INCLUDE_DIRS})
 endif ()

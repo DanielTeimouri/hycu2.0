@@ -22,12 +22,12 @@
 
 
 #include <cmath>
-
 #include "fq_element_table.hh"
 
+#include <flint/fmpz.h>
+#include <flint/ulong_extras.h>
 
 using namespace std;
-
 
 FqElementTable::
 FqElementTable(
@@ -59,21 +59,24 @@ FqElementTable(
 
   this->fq_elements.reserve(this->prime_power);
 
+  // Accept a generator only if its powers cover all nonzero elements.
   for ( bool is_gen = false; !is_gen; fq_nmod_randtest(gen, state, this->fq_ctx)) {
     is_gen = true;
 
-    this->fq_elements.clear();
+    this->fq_elements.clear(); 
 
     auto b = new fq_nmod_struct;
     fq_nmod_init(b, this->fq_ctx);
     fq_nmod_set(b, a, this->fq_ctx);
     fq_nmod_reduce(b, this->fq_ctx);
+
     this->fq_elements.push_back(b);
 
     fq_nmod_mul(a, a, gen, this->fq_ctx);
 
     for (size_t ix=1; ix<this->prime_power_pred; ++ix) {
       if ( fq_nmod_equal(a, this->fq_elements.front(), this->fq_ctx) ) {
+        // Returning to one early means the candidate is not primitive.
         is_gen = false;
         for ( auto fq : this->fq_elements ) {
           fq_nmod_clear(fq, this->fq_ctx);
@@ -92,7 +95,7 @@ FqElementTable(
     }
   }
 
-  { // the case of b == 0
+  { // Store zero after the q - 1 nonzero generator powers.
     auto b = new fq_nmod_struct;
     fq_nmod_init(b, this->fq_ctx);
     fq_nmod_zero(b, this->fq_ctx);

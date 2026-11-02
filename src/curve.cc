@@ -37,6 +37,11 @@
 #include <tuple>
 #include <vector>
 
+#include <flint/nmod_poly.h>
+#include <flint/nmod_poly_factor.h>
+#include <flint/fq_nmod_poly.h>
+#include <flint/fq_nmod_poly_factor.h>
+
 #ifdef TIMING
 #include <chrono>
 #endif
@@ -165,8 +170,30 @@ count(
     ReductionTable & reduction_table
   )
 {
-  // todo: Use error checking for all calls. Some implementations don't seem to support try/catch, but doublecheck this.
+  this->count_impl(reduction_table, nullptr);
+}
 
+void
+Curve::count(CpuEvaluationCache & cache)
+{
+  this->count_impl(cache.table_, &cache);
+}
+
+void
+Curve::count(CpuCoefficientBatch & batch)
+{
+  if (!batch.field_ || this->prime_exponent() != 1 ||
+      batch.varying_ >= this->poly_coeff_exponents.size()) {
+    ++batch.statistics_.fallbacks;
+    this->count(*batch.fallback_);
+    return;
+  }
+  this->count_impl(*batch.table_, nullptr, &batch);
+}
+
+void Curve::count_impl(ReductionTable & reduction_table, CpuEvaluationCache * cache,
+                      CpuCoefficientBatch * batch)
+{
   if ( reduction_table.prime != this->table->prime ) {
     cerr << "Curve.count: primes of curve and table must coincide: "
          << reduction_table.prime << " " << this->table->prime << endl;
@@ -182,9 +209,20 @@ count(
   // this also checks that the prime exponent is divisible by the one of the curve
   const vector<unsigned int> poly_coeff_exponents = this->convert_poly_coeff_exponents(reduction_table);
 
-  // ponts x != 0, infty
+  // Count points above nonzero finite x first.
   if ( reduction_table.is_opencl_enabled() )
     this->count_opencl(reduction_table, poly_coeff_exponents);
+  else if (batch) {
+    batch->prepare(poly_coeff_exponents);
+    const auto exponent = poly_coeff_exponents[batch->varying_];
+    const auto coefficient = batch->field_->coordinates_[exponent];
+    if (coefficient >= this->prime())
+      throw std::runtime_error("Batch coefficient is not in the prime subfield");
+    this->nmb_points[prime_exponent] = make_tuple(
+        batch->unramified_[coefficient], batch->roots_[coefficient]);
+  }
+  else if (cache && cache->varying_coefficient_ < poly_coeff_exponents.size())
+    this->count_cpu_reusing(poly_coeff_exponents, *cache);
   else
     this->count_cpu(reduction_table, poly_coeff_exponents);
 
@@ -198,11 +236,10 @@ count(
     get<0>(this->nmb_points[prime_exponent]) += 2;
 
 
-  // point x = infty
-  // if poly_coeffs ends with zero entry
+  // Odd-degree models have one point at infinity.
   if ( this->degree() < 2*this->genus() + 2 )
     get<1>(this->nmb_points[prime_exponent]) += 1;
-  // if leading coefficient is even power of generator
+  // Even-degree models have two if the leading coefficient is a square.
   else if (!(poly_coeff_exponents.back() & 1))
     get<0>(this->nmb_points[prime_exponent]) += 2;
 }
@@ -271,8 +308,7 @@ count_cpu(
 
           unsigned int tmp2;
           if (tmp <= f) {
-            // todo: this can be removed by doubling the size of incrementation_table
-            // and checking at prime_power_pred + 1 + tmp - f
+            // Order exponents so the Zech-table index stays nonnegative.
             tmp2 = f;
             f = tmp;
             tmp = tmp2;
@@ -292,6 +328,78 @@ count_cpu(
     else if ( !(f & 1) )
       get<0>(this->nmb_points[prime_exponent]) += 2;
   }
+}
+
+namespace {
+
+// Inputs and output are exponent indices, with q-1 denoting zero.
+inline unsigned int add_cpu_exponents(
+    unsigned int a, unsigned int b, unsigned int zero,
+    const vector<int32_t> & reductions, const vector<int32_t> & increments)
+{
+  if (a == zero) return b;
+  if (b == zero) return a;
+  if (a > b) std::swap(a, b);
+  const unsigned int increment = increments[b - a];
+  return increment == zero ? zero : reductions[a + increment];
+}
+
+}
+
+void
+Curve::count_cpu_reusing(const vector<unsigned int> & coefficients,
+                        CpuEvaluationCache & cache)
+{
+  const ReductionTable & table = cache.table_;
+  const unsigned int zero = table.prime_power_pred;
+  const auto & reductions = *table.exponent_reduction_table;
+  const auto & increments = *table.incrementation_table;
+  const size_t varying = cache.varying_coefficient_;
+
+  // Mask out the changing coefficient. Any other change (including degree)
+  // invalidates H(x), also when squarefree filtering skips intermediate curves.
+  vector<unsigned int> fixed_coefficients(coefficients);
+  fixed_coefficients[varying] = zero;
+  if (cache.fixed_coefficients_ != fixed_coefficients) {
+    cache.fixed_values_.resize(zero);
+    cache.monomial_exponents_.resize(zero);
+    for (unsigned int x = 1; x <= zero; ++x) {
+      unsigned int value = fixed_coefficients[0];
+      unsigned int power = 0;
+      unsigned int varying_power = 0; // x^0 = 1 has exponent zero
+      for (size_t dx = 1; dx < fixed_coefficients.size(); ++dx) {
+        power = reductions[power + x];
+        if (dx == varying) varying_power = power;
+        if (fixed_coefficients[dx] != zero) {
+          const unsigned int term = reductions[fixed_coefficients[dx] + power];
+          value = add_cpu_exponents(value, term, zero, reductions, increments);
+        }
+      }
+      cache.fixed_values_[x - 1] = value;
+      cache.monomial_exponents_[x - 1] = varying_power;
+    }
+    cache.fixed_coefficients_ = std::move(fixed_coefficients);
+    ++cache.rebuild_count_;
+  }
+  else {
+    ++cache.reuse_count_;
+  }
+
+  unsigned int unramified = 0;
+  unsigned int ramified = 0;
+  const unsigned int coefficient = coefficients[varying];
+  for (unsigned int ix = 0; ix < zero; ++ix) {
+    const unsigned int term = coefficient == zero ? zero
+        : reductions[coefficient + cache.monomial_exponents_[ix]];
+    const unsigned int value = add_cpu_exponents(
+        cache.fixed_values_[ix], term, zero, reductions, increments);
+    if (value == zero) ++ramified;
+    else if (!(value & 1)) unramified += 2;
+  }
+  auto & points = this->nmb_points[table.prime_exponent];
+  get<0>(points) += unramified;
+  get<1>(points) += ramified;
+  // count_impl adds the contributions at x = 0 and at infinity.
 }
 
 void
@@ -334,9 +442,7 @@ count_naive_nmod(
   fq_nmod_init(sub_gen, fq_ctx);
   fq_nmod_pow_ui(sub_gen, gen, prime_power_pred / this->table->prime_power_pred, fq_ctx);
 
-  // convert coefficient exponents to fq_nmod elements
-  // fixme: in this conversion as in the other ones, we
-  // silently assume that gen_q = gen_{q^l}^{q^l - q}
+  // Coefficient embedding assumes compatible generators in both fields.
   vector<const fq_nmod_struct*> poly_coefficients;
   for ( unsigned int e : this->poly_coeff_exponents ) {
     auto a = new fq_nmod_struct;
@@ -398,11 +504,10 @@ count_naive_nmod(
   }
 
 
-  // point x = infty
-  // if poly_coeffs ends with zero entry
+  // Odd-degree models have one point at infinity.
   if ( this->degree() < 2*this->genus() + 2 )
     get<1>(this->nmb_points[prime_exponent]) += 1;
-  // if leading coefficient is odd power of generator
+  // Even-degree models have two if the leading coefficient is a square.
   else if ( is_square_nonzero(poly_coefficients.back()) )
     get<0>(this->nmb_points[prime_exponent]) += 2;
 
@@ -457,9 +562,7 @@ count_naive_zech(
   fq_zech_init(sub_gen, fq_ctx);
   fq_zech_pow_ui(sub_gen, gen, prime_power_pred / this->table->prime_power_pred, fq_ctx);
 
-  // convert coefficient exponents to fq_zech elements
-  // fixme: in this conversion as in the other ones, we
-  // silently assume that gen_q = gen_{q^l}^{q^l - q}
+  // Coefficient embedding assumes compatible generators in both fields.
   vector<const fq_zech_struct*> poly_coefficients;
   for ( unsigned int e : this->poly_coeff_exponents ) {
     auto a = new fq_zech_struct;
@@ -521,11 +624,10 @@ count_naive_zech(
   }
 
 
-  // point x = infty
-  // if poly_coeffs ends with zero entry
+  // Odd-degree models have one point at infinity.
   if ( this->degree() < 2*this->genus() + 2 )
     get<1>(this->nmb_points[prime_exponent]) += 1;
-  // if leading coefficient is odd power of generator
+  // Even-degree models have two if the leading coefficient is a square.
   else if ( is_square_nonzero(poly_coefficients.back()) )
     get<0>(this->nmb_points[prime_exponent]) += 2;
 
@@ -566,13 +668,6 @@ Curve::
 max_prime_exponent()
   const
 {
-  // DEBUG
-  /*
-  cerr << "DEBUG: " << endl;
-  for ( auto p : this->nmb_points )
-    cerr << get<0>(p) << " " << get<0>(get<1>(p)) << " " << get<1>(get<1>(p)) << endl;
-  */
-
   unsigned int max_prime_exponent = this->prime_exponent();
   while ( this->nmb_points.count(max_prime_exponent) != 0 )
     max_prime_exponent += this->prime_exponent();

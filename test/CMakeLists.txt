@@ -7,6 +7,19 @@ if (BUILD_TEST)
   include_directories(.)
   aux_source_directory(. HyCu_SOURCES_TEST)
 
+  add_executable(hycu-flint-fq-test
+    test.cc
+    flint_fq.cc
+    flint_fq_polynomial.cc
+    ${HyCu_SOURCE_DIR}/src/flint_fq.cc
+    ${HyCu_SOURCE_DIR}/src/flint_fq_polynomial.cc
+    )
+  target_link_libraries(hycu-flint-fq-test
+    ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
+    ${FLINT_LIBRARY}
+    ${GMP_LIBRARY}
+    )
+
   add_executable(hycu-test
     ${HyCu_SOURCES_TEST}
     )

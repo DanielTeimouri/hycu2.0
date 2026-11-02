@@ -43,11 +43,7 @@ using std::vector;
 class ReductionTable
 {
   public:
-    // the field size is prime_power, which is a power of prime
-    // field size is referred to as q, field prime is referred to as p
-    // we write q = p^r
-    // a fixed generator for F_q is referred to by a
-    // in the current implemnentation it is given by the Conway polynomial
+    // q = p^r; nonzero elements are represented by generator exponents.
     ReductionTable(unsigned int prime, unsigned int prime_exponent)
       : ReductionTable(prime, prime_exponent, shared_ptr<OpenCLInterface>()) {};
     ReductionTable(unsigned int prime, unsigned int prime_exponent, shared_ptr<OpenCLInterface> && opencl);
@@ -57,6 +53,8 @@ class ReductionTable
     inline bool is_opencl_enabled() const { return (bool)opencl; };
     
     friend class Curve;
+    friend class CpuBatchField;
+    friend class CpuCoefficientBatch;
 #ifdef WITH_OPENCL
     friend OpenCLBufferEvaluation;
     friend OpenCLKernelEvaluation;
@@ -71,10 +69,9 @@ class ReductionTable
 
     shared_ptr<OpenCLInterface> opencl;
 
-    // the reduction table is the reduction table modulo q-1 for integers less than max(r,2)*(q-1)
+    // Reduce exponent sums modulo q - 1.
     shared_ptr<vector<int32_t>> exponent_reduction_table;
-    // given a^i, tabulate the mod q-1 reduced j with a^j = 1 + a^i,
-    // if there is any, and q-1 if there is non
+    // Zech table: entry i is the exponent of 1 + a^i; q - 1 denotes zero.
     shared_ptr<vector<int32_t>> incrementation_table;
 
 #ifdef WITH_OPENCL

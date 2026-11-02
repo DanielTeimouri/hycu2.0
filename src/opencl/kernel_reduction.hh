@@ -28,7 +28,7 @@
 #include <memory>
 #include <tuple>
 #include <vector>
-#include <CL/cl.hpp>
+#include <CL/opencl.hpp>
 
 
 using std::map;
@@ -44,7 +44,7 @@ class OpenCLKernelReduction
   public:
     OpenCLKernelReduction(const ReductionTable & table);
 
-    void reduce(map<unsigned int, tuple<int,int>> & nmb_points);
+    void reduce(map<unsigned int, tuple<unsigned int,unsigned int>> & nmb_points);
 
   private:
     unsigned int prime_exponent;

@@ -22,9 +22,10 @@
 
 
 #include <set>
-
 #include "curve_iterator.hh"
 
+#include <flint/fmpz.h>
+#include <flint/ulong_extras.h>
 
 using namespace std;
 
@@ -53,7 +54,7 @@ CurveIterator(
 
   for ( unsigned int degree = 2*genus + 1; degree < (with_marked_point ? 2*genus + 2 : 2*genus + 3); ++degree ) {
     if ( prime > degree ) {
-      // next to hightest coefficient is zero
+      // The next-to-leading coefficient is zero.
       // two consecutive coefficients depend on each other
       // and vary between a square and non-square
       

@@ -60,6 +60,10 @@ main(
       "path to the output root" )
     ( "nmb-threads,n", value<int>()->default_value(-1),
       "number of working threads" )
+    ( "reuse-evaluations", "experimental CPU reuse of partial polynomial evaluations" )
+    ( "batch-coefficient-counting", "experimental exact CPU coefficient-family counting" )
+    ( "worker-poll-ms", value<int>()->default_value(50),
+      "positive polling interval in milliseconds for idle workers (default: 50)" )
     ( "nmb-threads-per-gpu,g", value<unsigned int>()->default_value(1),
       "number of threads assigned per GPU" );
 
@@ -78,6 +82,16 @@ main(
   if ( options_map.count("help") ) {
     cerr << visible_options;
     return 0;
+  }
+
+  const int worker_poll_ms = options_map["worker-poll-ms"].as<int>();
+  if (options_map.count("reuse-evaluations") && options_map.count("batch-coefficient-counting")) {
+    cerr << "Choose either reuse-evaluations or batch-coefficient-counting" << endl;
+    return 1;
+  }
+  if (worker_poll_ms <= 0) {
+    cerr << "worker-poll-ms must be positive" << endl;
+    return 1;
   }
 
   if ( !options_map.count("config-file") ) {
@@ -131,7 +145,10 @@ main(
   StandaloneWorkerPool
     worker_pool( store_type,
         options_map["nmb-threads"].as<int>(),
-        options_map["nmb-threads-per-gpu"].as<unsigned int>() );
+        options_map["nmb-threads-per-gpu"].as<unsigned int>(),
+        options_map.count("reuse-evaluations") != 0,
+        std::chrono::milliseconds(worker_poll_ms),
+        options_map.count("batch-coefficient-counting") != 0 );
 
   for ( auto & node : config ) {
     node.prepend_output_path(canonical(output_path,current_path()));

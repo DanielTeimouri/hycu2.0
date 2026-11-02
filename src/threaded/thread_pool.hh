@@ -44,8 +44,12 @@ class ThreadPool :
   public std::enable_shared_from_this<ThreadPool>
 {
   public:
-    ThreadPool(const shared_ptr<StoreFactoryInterface> store_factory) :
-      store_factory ( store_factory ) {};
+    ThreadPool(const shared_ptr<StoreFactoryInterface> store_factory,
+               bool reuse_evaluations = false,
+               bool batch_coefficient_counting = false) :
+      store_factory ( store_factory ),
+      reuse_evaluations ( reuse_evaluations ),
+      batch_coefficient_counting ( batch_coefficient_counting ) {};
 
     void spark_threads(int nmb_working_threads = -1, unsigned int nmb_threads_per_gpu = 0 );
     void shutdown_threads();
@@ -67,6 +71,8 @@ class ThreadPool :
 
   private:
     const shared_ptr<StoreFactoryInterface> store_factory;
+    const bool reuse_evaluations;
+    const bool batch_coefficient_counting;
 
     mutex data_mutex;
 

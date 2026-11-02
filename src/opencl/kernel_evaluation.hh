@@ -26,7 +26,7 @@
 
 #include <memory>
 #include <vector>
-#include <CL/cl.hpp>
+#include <CL/opencl.hpp>
 
 
 using std::shared_ptr;
@@ -40,7 +40,7 @@ class OpenCLKernelEvaluation
   public:
     OpenCLKernelEvaluation(const ReductionTable & table, unsigned int degree);
 
-    void enqueue(vector<int> poly_coeff_exponents);
+    void enqueue(vector<unsigned int> poly_coeff_exponents); 
 
   private:
     unsigned int prime_power_pred;

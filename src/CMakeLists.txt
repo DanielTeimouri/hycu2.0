@@ -1,7 +1,10 @@
 set(HyCu_SOURCES_CURVE
   block_iterator.cc
   curve.cc
+  cpu_coefficient_batch.cc
   curve_iterator.cc
+  flint_fq.cc
+  flint_fq_polynomial.cc
   fq_element_table.cc
   reduction_table.cc
   single_curve_fp.cc
@@ -159,6 +162,25 @@ if (BUILD_MPI)
 endif (BUILD_MPI)
 
 
+if (BUILD_CPU_REUSE_TEST)
+  # Deliberately no automatic test execution during the build.
+  add_executable(hycu-cpu-reuse-test
+    ../test/cpu_reuse/test.cc
+    ${HyCu_SOURCES_CURVE}
+    ${HyCu_SOURCES_STORE}
+    )
+  target_link_libraries(hycu-cpu-reuse-test
+    ${Boost_FILESYSTEM_LIBRARY}
+    ${FLINT_LIBRARY}
+    ${GMP_LIBRARY}
+    ${YAML-cpp_LIBRARY}
+    ${CMAKE_THREAD_LIBS_INIT}
+    )
+  if (WITH_OPENCL)
+    target_link_libraries(hycu-cpu-reuse-test ${OpenCL_LIBRARY})
+  endif()
+endif()
+
 if (BUILD_TEST)
   add_library(hycu-test-lib STATIC
     ${HyCu_SOURCES_CURVE}
@@ -167,3 +189,20 @@ if (BUILD_TEST)
     ${HyCu_SOURCES_STANDALONE_WORKER_POOL}
     )
 endif (BUILD_TEST)
+
+if (BUILD_CPU_BATCH_TEST)
+  add_executable(hycu-ntt-test ../test/ntt/test.cc)
+  if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    add_executable(hycu-benchmark-measure ../test/benchmark/benchmark_measure.cc)
+  endif()
+  add_executable(hycu-cpu-batch-test
+    ../test/cpu_batch/test.cc
+    ${HyCu_SOURCES_CURVE}
+    ${HyCu_SOURCES_STORE})
+  target_link_libraries(hycu-cpu-batch-test
+    ${Boost_FILESYSTEM_LIBRARY} ${FLINT_LIBRARY} ${GMP_LIBRARY}
+    ${YAML-cpp_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
+  if (WITH_OPENCL)
+    target_link_libraries(hycu-cpu-batch-test ${OpenCL_LIBRARY})
+  endif()
+endif()

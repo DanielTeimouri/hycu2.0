@@ -26,7 +26,7 @@
 
 #include <memory>
 #include <string>
-#include <CL/cl.hpp>
+#include <CL/opencl.hpp>
 
 
 #define AS_STRING(S) AS_STRING_(S)
